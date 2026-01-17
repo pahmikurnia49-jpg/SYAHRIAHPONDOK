@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Keuangan - PP At-Taufiiqiyyah Bustanul Maarif</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #0f5132; /* Hijau Pesantren */
+            --secondary-color: #198754;
+            --accent-color: #ffc107;
+        }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Sidebar & Layout */
+        .main-container { display: flex; min-height: 100vh; }
+        .sidebar { 
+            width: 280px; 
+            background-color: var(--primary-color); 
+            color: white; 
+            min-height: 100vh;
+            padding: 20px 0;
+            display: none; /* Sembunyi dulu kalau belum login */
+        }
+        .content { flex-grow: 1; padding: 20px; display: none; /* Sembunyi dulu */ }
+        
+        /* Logo Area */
+        .brand-section { text-align: center; padding: 0 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .brand-logo { width: 80px; height: 80px; object-fit: contain; background: white; border-radius: 50%; padding: 5px; margin-bottom: 10px; }
+        .brand-name { font-size: 0.9rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Menu Items */
+        .nav-link { color: rgba(255,255,255,0.8) !important; padding: 12px 20px; cursor: pointer; border-radius: 0 25px 25px 0; margin-bottom: 5px; }
+        .nav-link:hover, .nav-link.active { background-color: var(--accent-color); color: #000 !important; font-weight: bold; }
+        .nav-link i { width: 25px; text-align: center; margin-right: 10px; }
+
+        /* Login Screen */
+        #page-login { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background: linear-gradient(135deg, var(--primary-color), #000);
+        }
+        .login-card { width: 100%; max-width: 400px; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <div id="page-login">
+        <div class="card login-card">
+            <div class="card-header text-center bg-white py-4">
+                <img src="logo.png" onerror="this.src='https://via.placeholder.com/150?text=LOGO'" alt="Logo" style="width: 100px;">
+                <h5 class="mt-3 fw-bold text-success">PP AT-TAUFIIQIYYAH<br><small class="text-muted" style="font-size: 0.8em;">BUSTANUL MAARIF</small></h5>
+            </div>
+            <div class="card-body p-4">
+                <form id="formLogin">
+                    <div class="mb-3">
+                        <label>Username</label>
+                        <input type="text" id="loginUser" class="form-control" placeholder="admin" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <div class="input-group">
+                            <input type="password" id="loginPass" class="form-control" placeholder="123456" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePass()"><i class="fa fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 fw-bold">MASUK APLIKASI</button>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="lupaPassword()" class="text-decoration-none small text-muted">Lupa Password?</a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center bg-light small">
+                &copy; 2024 Sistem Keuangan Pondok
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container" id="main-app">
+        
+        <div class="sidebar d-flex flex-column">
+            <div class="brand-section">
+                <img src="logo.png" onerror="this.src='https://via.placeholder.com/150?text=LOGO'" class="brand-logo">
+                <div class="brand-name">PP AT-TAUFIIQIYYAH BUSTANUL MAARIF</div>
+            </div>
+            <nav class="nav flex-column">
+                <a class="nav-link active" onclick="bukaHalaman('dashboard')"><i class="fas fa-home"></i> Dashboard</a>
+                <a class="nav-link" onclick="bukaHalaman('santri')"><i class="fas fa-users"></i> Data Santri</a>
+                <a class="nav-link" onclick="bukaHalaman('pembayaran')"><i class="fas fa-cash-register"></i> Pembayaran</a>
+                <a class="nav-link" onclick="bukaHalaman('arsip')"><i class="fas fa-box-archive"></i> Arsip / Non-Aktif</a>
+                <a class="nav-link" onclick="bukaHalaman('laporan')"><i class="fas fa-file-invoice"></i> Laporan</a>
+                <a class="nav-link" onclick="bukaHalaman('pengaturan')"><i class="fas fa-cog"></i> Pengaturan</a>
+                <div class="mt-auto px-3">
+                    <button onclick="logout()" class="btn btn-danger w-100 btn-sm"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </nav>
+        </div>
+
+        <div class="content">
+            <div class="d-md-none mb-3">
+                <button class="btn btn-success" onclick="toggleSidebar()"><i class="fas fa-bars"></i> Menu</button>
+            </div>
+
+            <div id="view-dashboard" class="page-view">
+                <h2>Dashboard</h2>
+                <p>Halo Admin, selamat datang kembali!</p>
+                <div class="alert alert-info">Fitur Dashboard belum diaktifkan (Tunggu Tahap Selanjutnya).</div>
+            </div>
+
+            <div id="view-santri" class="page-view" style="display:none;">
+                <h2>Data Santri Aktif</h2>
+                <div class="alert alert-warning">Fitur Data Santri belum diaktifkan.</div>
+            </div>
+
+            <div id="view-pembayaran" class="page-view" style="display:none;">
+                <h2>Input Pembayaran Syahriah</h2>
+                <div class="alert alert-warning">Fitur Pembayaran belum diaktifkan.</div>
+            </div>
+
+             <div id="view-arsip" class="page-view" style="display:none;">
+                <h2>Arsip Santri Non-Aktif</h2>
+                <div class="alert alert-warning">Fitur Arsip belum diaktifkan.</div>
+            </div>
+
+            <div id="view-laporan" class="page-view" style="display:none;">
+                <h2>Laporan Keuangan</h2>
+                <div class="alert alert-warning">Fitur Laporan belum diaktifkan.</div>
+            </div>
+
+            <div id="view-pengaturan" class="page-view" style="display:none;">
+                <h2>Pengaturan Aplikasi</h2>
+                <div class="alert alert-warning">Fitur Pengaturan belum diaktifkan.</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // === 1. KONFIGURASI DATABASE (CORE) ===
+        const DB_KEY = 'SIPP_PONDOK_V1'; // Kunci LocalStorage
+        
+        // Data Default jika aplikasi baru pertama kali dibuka
+        const defaultData = {
+            config: {
+                username: 'admin',
+                password: '123', // Password default
+                recoveryKey: 'PONDOK123', // Kode pemulihan default
+                nominalSyahriah: 100000,
+                tglJatuhTempo: 10,
+                lastLogin: null
+            },
+            santri: [],     // Array menyimpan data santri
+            transaksi: []   // Array menyimpan riwayat bayar
+        };
+
+        // Fungsi Baca Database
+        function getDB() {
+            const data = localStorage.getItem(DB_KEY);
+            if (!data) {
+                // Jika belum ada, buat baru
+                saveDB(defaultData);
+                return defaultData;
+            }
+            return JSON.parse(data);
+        }
+
+        // Fungsi Simpan Database
+        function saveDB(data) {
+            localStorage.setItem(DB_KEY, JSON.stringify(data));
+        }
+
+        // === 2. AUTHENTICATION SYSTEM ===
+        
+        // Cek Login saat web dibuka
+        function cekSesiLogin() {
+            const isLogin = sessionStorage.getItem('isLogin');
+            if (isLogin === 'true') {
+                tampilkanApp();
+            } else {
+                tampilkanLogin();
+            }
+        }
+
+        document.getElementById('formLogin').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value;
+            const p = document.getElementById('loginPass').value;
+            
+            const db = getDB();
+            
+            if (u === db.config.username && p === db.config.password) {
+                sessionStorage.setItem('isLogin', 'true');
+                
+                // Update Last Login
+                db.config.lastLogin = new Date().toLocaleString();
+                saveDB(db);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Login Berhasil',
+                    timer: 1000,
+                    showConfirmButton: false
+                }).then(() => {
+                    tampilkanApp();
+                });
+            } else {
+                Swal.fire('Gagal', 'Username atau Password salah!', 'error');
+            }
+        });
+
+        function logout() {
+            Swal.fire({
+                title: 'Keluar Aplikasi?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Keluar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    sessionStorage.removeItem('isLogin');
+                    location.reload();
+                }
+            });
+        }
+
+        function lupaPassword() {
+            Swal.fire({
+                title: 'Lupa Password?',
+                text: 'Masukkan KODE PEMULIHAN (Recovery Key)',
+                input: 'text',
+                inputAttributes: { autocapitalize: 'off' },
+                showCancelButton: true,
+                confirmButtonText: 'Reset Password',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const db = getDB();
+                    if (result.value === db.config.recoveryKey) {
+                        // Reset ke default
+                        db.config.password = '123456'; 
+                        saveDB(db);
+                        Swal.fire('Berhasil!', 'Password direset menjadi: 123456', 'success');
+                    } else {
+                        Swal.fire('Gagal!', 'Kode Pemulihan Salah!', 'error');
+                    }
+                }
+            });
+        }
+
+        // === 3. NAVIGATION SYSTEM ===
+        
+        function tampilkanLogin() {
+            document.getElementById('page-login').style.display = 'flex';
+            document.getElementById('main-app').style.display = 'none';
+            document.querySelector('.sidebar').style.display = 'none';
+            document.querySelector('.content').style.display = 'none';
+        }
+
+        function tampilkanApp() {
+            document.getElementById('page-login').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.querySelector('.sidebar').style.display = 'flex';
+            document.querySelector('.content').style.display = 'block';
+            bukaHalaman('dashboard'); // Default buka dashboard
+        }
+
+        function bukaHalaman(idHalaman) {
+            // Sembunyikan semua page-view
+            document.querySelectorAll('.page-view').forEach(el => el.style.display = 'none');
+            // Tampilkan yang dipilih
+            document.getElementById('view-' + idHalaman).style.display = 'block';
+            
+            // Update Menu Active State
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            // Cara gampang cari link yg diklik (improvement needed for robust app, but ok for simple)
+            event.target.classList.add('active'); 
+            
+            // Khusus: Kalau buka dashboard, refresh datanya (nanti)
+            if(idHalaman === 'dashboard') {
+                // refreshDashboard();
+            }
+        }
+
+        // Fitur Mata Password
+        function togglePass() {
+            const passInput = document.getElementById('loginPass');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+            } else {
+                passInput.type = "password";
+            }
+        }
+
+        // Fitur Toggle Sidebar Mobile
+        function toggleSidebar() {
+            const sb = document.querySelector('.sidebar');
+            sb.style.display = (sb.style.display === 'none' || sb.style.display === '') ? 'flex' : 'none';
+        }
+
+        // Mulai Aplikasi
+        cekSesiLogin();
+
+    </script>
+</body>
+</html>
